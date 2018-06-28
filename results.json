@@ -1,0 +1,73 @@
+[
+    {
+        "qwk-mean": 0.605788631592,
+        "qwk-std": 0.00317117715894,
+        "exec-time-sec": 334.374572039,
+        "validation-type": "cv",
+        "n_folds": 3,
+        "rmin": false,
+        "eta": 0.01,
+        "min_child_weight": 6,
+        "subsample": 0.7,
+        "colsample_bytree": 0.7,
+        "max_depth": 6,
+        "num_rounds": 10000,
+        "num_es_rounds": 120,
+        "es_share": 0.05,
+        "est_type": "xgb"
+    },
+    {
+        "qwk-mean": 0.5828288522912984,
+        "qwk-std": 0.003604255044501279,
+        "exec-time-sec": 398.817314148,
+        "validation-type": "cv",
+        "n_folds": 3,
+        "rmin": false,
+        "n_estimators": 200,
+        "est_type": "rfr"
+    },
+    {
+        "qwk-mean": 0.5855664985019745,
+        "qwk-std": 0.001689581447944851,
+        "exec-time-sec": 437.633708954,
+        "validation-type": "cv",
+        "n_folds": 3,
+        "rmin": false,
+        "n_estimators": 200,
+        "est_type": "etree"
+    },
+    {
+        "qwk-mean": 0.610298252514,
+        "qwk-std": 0.0051761541879,
+        "exec-time-sec": 344.473729849,
+        "validation-type": "cv",
+        "n_folds": 3,
+        "rmin": false,
+        "eta": 0.01,
+        "min_child_weight": 6,
+        "subsample": 0.7,
+        "colsample_bytree": 0.7,
+        "max_depth": 6,
+        "num_rounds": 10000,
+        "num_es_rounds": 120,
+        "es_share": 0.05,
+        "est_type": "xgb/dt"
+    },
+    {
+        "qwk-mean": 0.654195672603,
+        "qwk-std": 0.0032825843272,
+        "exec-time-sec": 386.967167854,
+        "validation-type": "cv",
+        "n_folds": 3,
+        "rmin": true,
+        "eta": 0.01,
+        "min_child_weight": 6,
+        "subsample": 0.7,
+        "colsample_bytree": 0.7,
+        "max_depth": 6,
+        "num_rounds": 10000,
+        "num_es_rounds": 120,
+        "es_share": 0.05,
+        "est_type": "xgb"
+    }
+]
