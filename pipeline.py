@@ -232,10 +232,10 @@ def validate(params):
 
 def test_validate():
     params = {
-        "eta": 0.01,
+        "eta": 0.1,
         "min_child_weight": 6,
-        "subsample": 0.1,
-        "colsample_bytree": 0.2,
+        "subsample": 0.5,
+        "colsample_bytree": 0.5,
         "max_depth": 6,
         "num_rounds": 10,
         "num_es_rounds": 120,
