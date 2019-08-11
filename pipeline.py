@@ -172,8 +172,8 @@ def init_params(overrides):
 
 def init_xgb_est(params):
     keys = {
-        'eta',
-        'num_rounds',
+        'learning_rate',
+        'n_estimators',
         'max_depth',
         'min_child_weight',
         'gamma',
