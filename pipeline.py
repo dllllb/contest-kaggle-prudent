@@ -2,18 +2,18 @@ import numpy as np
 import pandas as pd
 
 from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import cross_val_score, train_test_split, StratifiedKFold
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.preprocessing import Imputer
 from sklearn.tree import DecisionTreeClassifier
 from scipy.optimize import fmin_powell
+from xgboost import XGBRegressor
 
-import ds_tools.dstools.ml.metrics as m
-import ds_tools.dstools.ml.ensemble as ens
-import ds_tools.dstools.ml.xgboost_tools as xgb
+from ensemble import ModelEnsembleRegressor
+from qwk import quadratic_weighted_kappa
 
 
 def update_model_stats(stats_file, params, results):
@@ -49,7 +49,7 @@ def preds_to_rank(preds, min, max):
 def qwk_score(est, features, labels):
     raw_pred = est.predict(features)
     pred = preds_to_rank(raw_pred, np.min(labels), np.max(labels))
-    return m.quadratic_weighted_kappa(labels, pred)
+    return quadratic_weighted_kappa(labels, pred)
 
 
 def score_offset(pred_base, pred_modified, labels, offset, rank_number, scorer):
@@ -139,25 +139,25 @@ def results_corr(pred_files):
     preds = np.array(
         [pd.read_csv(file, index_col='Id', squeeze=True) for file in pred_files],
         dtype=np.int32)
-    print(DataFrame(np.corrcoef(preds), index=pred_files, columns=pred_files))
+    print(pd.DataFrame(np.corrcoef(preds), index=pred_files, columns=pred_files))
     
     
 def submission_mix(pred_files, name):
-    preds = DataFrame({
+    preds = pd.DataFrame({
         file: pd.read_csv(file, index_col='Id', squeeze=True)
         for file in pred_files})
     mix = preds_to_rank(preds.mean(axis=1), 1, 8)
-    res = Series(mix, index=preds.index, name='Response')
+    res = pd.Series(mix, index=preds.index, name='Response')
     res.to_csv(name+'.csv', index_label='Id', header=True)
     
     
 def submission_mix_m(pred_files, name):
-    preds = DataFrame({
+    preds = pd.DataFrame({
         file: pd.read_csv(file, index_col='Id', squeeze=True)
         for file in pred_files})
     mix = preds.mode(axis=1)[0]
     mix[mix.isnull()] = preds.median(axis=1)
-    res = Series(mix.astype(int), name='Response')
+    res = pd.Series(mix.astype(int), name='Response')
     res.to_csv(name+'.csv', index_label='Id', header=True)
 
 
@@ -179,19 +179,25 @@ def init_xgb_est(params):
         'gamma',
         'subsample',
         'colsample_bytree',
-        'num_es_rounds',
-        'es_share'
     }
     
     xgb_params = {
         "objective": "reg:linear",
         "scale_pos_weight": 1,
-        "silent": 0,
-        "verbose": params['num_es_rounds'],
         **{k: v for k, v in params.items() if k in keys},
     }
-    
-    return xgb.XGBoostRegressor(**xgb_params)
+
+    class XGBC(XGBRegressor):
+        def fit(self, x, y, **kwargs):
+            f_train, f_val, t_train, t_val = train_test_split(x, y, test_size=params['es_share'])
+            super().fit(
+                f_train,
+                t_train,
+                eval_set=[(f_val, t_val)],
+                early_stopping_rounds=params['num_es_rounds'],
+                verbose=params['num_es_rounds'])
+
+    return XGBC(**xgb_params)
 
 
 def validate(params):
@@ -201,7 +207,7 @@ def validate(params):
     transf = make_pipeline(
         df2dict,
         DictVectorizer(sparse=False),
-        Imputer(strategy='median'),
+        SimpleImputer(strategy='median'),
     )
     
     est_type = params['est_type']
@@ -212,18 +218,20 @@ def validate(params):
     elif est_type == 'etree':
         est = ExtraTreesRegressor(n_estimators=params['n_estimators'], n_jobs=-1, verbose=1)
     elif est_type == 'xgb/dt':
-        ens.ModelEnsembleRegressor(
+        est = ModelEnsembleRegressor(
             intermediate_estimators=[
                 init_xgb_est(params),
             ],
             assembly_estimator=DecisionTreeClassifier(max_depth=2),
             ensemble_train_size=1
         )
+    else:
+        raise AssertionError(f'unknown estimator type: {est_type}')
         
     if params['rmin']:
         est = RemindersMinimizingRegressor(
             base_estimator=est,
-            scorer=m.quadratic_weighted_kappa
+            scorer=quadratic_weighted_kappa
         )
     
     est = make_pipeline(transf, est)
